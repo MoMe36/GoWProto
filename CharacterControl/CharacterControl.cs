@@ -21,7 +21,17 @@ public class CharacterControl : MonoBehaviour
     // public enum MovementState {normal, airborne};
     // [Header("Character States")] 
     // public MovementState CurrentMovementState; 
+    public enum AxeStates{InHand, InHolder, AxeOut}; 
+    [Header("Axe Control")]
+    public AxeStates AxeState;  
+    public Transform Axe; 
+    public Transform AxeHand; 
+    public Transform AxeHolder; 
+    public AxeBehaviour AxeControl; 
+    public float ThrowForce; 
+    public float ThrowAngle; 
 
+    [Header("Camera")]
     public Transform CurrentCamera; 
 
     [Header("Ground Movement Variables")]
@@ -98,6 +108,22 @@ public class CharacterControl : MonoBehaviour
             current_tilt_value = 0f; 
             initial_tilt_rotation = TiltTarget.transform.rotation; 
         }
+
+        UpdateAxeState(); 
+    }
+
+    void UpdateAxeState(){
+
+        if(AxeState == AxeStates.InHand){
+            Axe.parent = AxeHand; 
+            anim_control.SetAxeState(true); 
+        } else if(AxeState == AxeStates.InHolder){
+            Axe.parent = AxeHolder;
+            anim_control.SetAxeState(false);  
+        }
+
+        Axe.transform.position = Axe.transform.parent.position;
+        Axe.transform.rotation = Axe.transform.parent.rotation;
     }
 
     void Update(){
@@ -115,8 +141,10 @@ public class CharacterControl : MonoBehaviour
         bool jump_input = Input.GetButtonDown("AButton"); 
         bool dash_input = Input.GetButtonDown("BButton"); 
         bool aim = Input.GetAxis("L2") > 0.2f ? true : false; 
-        bool hit = Input.GetButtonDown("YButton"); 
-
+        bool hit = Input.GetButtonDown("XButton"); 
+        bool change_weapon_state = Input.GetButtonDown("YButton"); 
+        bool axe_action = Input.GetButton("R1"); 
+        bool call_axe = Input.GetButton("L1") && AxeState == AxeStates.AxeOut; 
 
 
         intensity = Vector3.SqrMagnitude(user_dir); 
@@ -128,7 +156,9 @@ public class CharacterControl : MonoBehaviour
         bool run_turn, run_stop; 
         RunStopsLogic(out run_turn, out run_stop); 
 
-        SendTriggerToAnimator(jump_input, landed, fall, dash_input, hit, run_turn, run_stop);
+        SendTriggerToAnimator(jump_input, landed, fall, dash_input, hit, run_turn, run_stop, change_weapon_state, call_axe);
+        SendAnimatorBool(aim, axe_action); 
+
         MoveLogic(movement_dir, intensity, grounded);
         ResetTriggers(); 
 
@@ -223,9 +253,16 @@ public class CharacterControl : MonoBehaviour
 
     }
 
+    void SendAnimatorBool(bool aim, bool axe_action){
+            anim_control.BoolControl("Aim", aim); 
+            if(aim && axe_action)
+                anim_control.Launch("Throw"); 
+    }
+
     void SendTriggerToAnimator(bool jump, bool landed, bool fall, 
                                bool dash, bool hit, bool run_turn, 
-                               bool run_stop){
+                               bool run_stop, bool change_weapon_state, 
+                               bool call_axe){
         if(jump){
             if(IsGrounded){
                 anim_control.Launch("jump"); 
@@ -262,6 +299,30 @@ public class CharacterControl : MonoBehaviour
                 anim_control.HitAnimation("hit"); 
             }
         }
+
+         if(change_weapon_state){
+            anim_control.Launch("GetAxe"); 
+        }
+
+        if(call_axe)
+            anim_control.Launch("CallAxe"); 
+    }
+
+    public void DoThrow(){
+        Axe.parent = null; 
+        AxeState = AxeStates.AxeOut; 
+        AxeControl.SetThrowParams(Quaternion.AngleAxis(ThrowAngle, transform.right) * transform.forward * ThrowForce); 
+        anim_control.SetThrowParams(); 
+    }
+
+    public void CallAxe(){
+        AxeControl.ReturnOrder(AxeHand);
+    }
+
+    public void ReceiveAxe(){
+        AxeState = AxeStates.InHand; 
+        UpdateAxeState(); 
+
     }
 
     void OnDrawGizmos(){
@@ -308,6 +369,17 @@ public class CharacterControl : MonoBehaviour
         else if(new_state_name == "hit")
             CurrentState = CharacterState.hit; 
 
+    }
+
+    public void ChangeWeaponState(){
+        Debug.Log("Called weapon"); 
+        if(AxeState == AxeStates.InHand){
+            AxeState = AxeStates.InHolder; 
+        } else if(AxeState == AxeStates.InHolder){
+            AxeState = AxeStates.InHand;
+        }
+
+        UpdateAxeState(); 
     }
 
     public void SetRunningState(string new_state_name){

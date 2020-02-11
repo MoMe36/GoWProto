@@ -69,6 +69,12 @@ namespace Pathless{
             } else if(msg == "run_stop"){
                 if(enter)
                     movement_control.SetRunningState("stop"); 
+            } else if(msg == "getting_axe"){
+                if(enter)
+                    DoChangeAxeState(); 
+            } else if(msg == "calling_axe"){
+                if(enter)
+                    movement_control.CallAxe(); 
             }
         }
 
@@ -76,18 +82,20 @@ namespace Pathless{
         public void CallbackInform(string msg){
             if(msg == "dash_exit")
                 movement_control.ExitDash(); 
+            if(msg == "throw")
+                movement_control.DoThrow(); 
         }
 
         public void InformEvent(string msg){
             Inform(msg, true); 
         }
 
-        public void Launch(string trigger_name){
-            anim.SetTrigger(trigger_name); 
+        public void BoolControl(string name, bool val){
+            anim.SetBool(name, val); 
         }
 
-        public void Activate(string bool_name){
-            anim.SetBool(bool_name, true); 
+        public void Launch(string trigger_name){
+            anim.SetTrigger(trigger_name); 
         }
 
         public void HitAnimation(string msg){
@@ -96,8 +104,29 @@ namespace Pathless{
                 Debug.Log("Launched"); 
             }
             else if(msg == "follow")
-                Activate("hit_follow"); 
+                BoolControl("hit_follow", true); 
             
+        }
+
+        public void SetThrowParams(){
+            BoolControl("HoldingAxe", false); 
+        }
+
+        public void SetAxeState(bool hand){
+            anim.SetBool("HoldingAxe", hand); 
+        }
+
+        public void ChangeAxeState(){
+            bool current = anim.GetBool("HoldingAxe"); 
+            anim.SetBool("HoldingAxe", !current); 
+        }
+
+        public void DoChangeAxeState(){
+            movement_control.ChangeWeaponState();
+        }
+
+        public void ManageLayerWeight(float weight){
+            anim.SetLayerWeight(1, weight); 
         }
 
         public void ResetTrigger(string trigger_name){

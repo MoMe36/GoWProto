@@ -15,22 +15,41 @@ public class AnimatorInform : StateMachineBehaviour {
     public bool UseCallback; 
     public float AfterRatio = 0.8f;
     public string AfterInformation;  
+    public bool OnlyOnce = true; 
+    bool only_once_counter; 
 
     [Header("HitInfo")]
     public bool IsHitAnimation; 
     public string HitboxName; 
     public HitData HitParameters; 
 
+    [Header("LayerWeight")]
+    public bool ChangeLayerWeight; 
+    public bool ChangeOnEnter; 
+    public float LayerWeightTo; 
+
      // OnStateEnter is called when a transition starts and the state machine starts to evaluate this state
     override public void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex) {
         Call(animator, true); 
+        ManageLayerWeight(animator, true);
+        
+
+        if(UseCallback)
+            only_once_counter = true; 
     }
 
     // OnStateUpdate is called on each Update frame between OnStateEnter and OnStateExit callbacks
     override public void OnStateUpdate(Animator animator, AnimatorStateInfo stateInfo, int layerIndex) {
         if(UseCallback){
-            if(stateInfo.normalizedTime > AfterRatio)
-                IntermediateCall(animator, AfterInformation);
+            if(stateInfo.normalizedTime > AfterRatio){
+                if(OnlyOnce){
+                    if(only_once_counter){
+                        only_once_counter = false; 
+                        IntermediateCall(animator, AfterInformation);
+                    }
+                } else
+                    IntermediateCall(animator, AfterInformation); 
+            }
         }
     }
 
@@ -51,6 +70,13 @@ public class AnimatorInform : StateMachineBehaviour {
 
     void IntermediateCall(Animator animator, string msg){
         animator.gameObject.GetComponent<CharacterAnimationControl>().CallbackInform(msg);
+    }
+
+    void ManageLayerWeight(Animator animator, bool on_enter){
+        if(ChangeLayerWeight){
+            if(ChangeOnEnter)
+                animator.gameObject.GetComponent<CharacterAnimationControl>().ManageLayerWeight(LayerWeightTo); 
+        }
     }
 
     [ContextMenu("Fill HitParams")]
