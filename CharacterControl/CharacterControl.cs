@@ -12,7 +12,7 @@ public class CharacterControl : MonoBehaviour
     CharacterController controller; 
     CharacterAnimationControl anim_control; 
 
-    public enum CharacterState {normal, dash, aim, hit};
+    public enum CharacterState {normal, dash, aim, hit, dizzy, cinematic};
     [Header("Character States")] 
     public CharacterState CurrentState; 
 
@@ -69,6 +69,10 @@ public class CharacterControl : MonoBehaviour
     public float MaxFallSpeed;    
     public LayerMask HitboxLayer; 
 
+    [Header("Cinematic Move Params")]
+    public Vector3 CinematicTargetPosition; 
+    public float CinematicMaxMoveSpeed; 
+
     [Header("Dash Variables")]
     public float DashForce = 10f; 
     public float DashAcceleration; 
@@ -83,6 +87,16 @@ public class CharacterControl : MonoBehaviour
     // public face_directionHitbox[] Hitboxes; 
     public Dictionary<string, Hitbox> HitDict; 
     Impulsion CharacterImpulse; 
+
+
+    // DIZZY STATE
+    [Header("DizzyState")]
+    public GameObject PrefabExecDetector;
+    GameObject ExecDetector;  
+    public float InstantiateDistance = 1f; 
+    bool has_exec_target; 
+    CharacterControl ExecTarget; 
+    CharacterAnimationControl ExecTargetAnim; 
 
 
     [Header("DEBUG")]
@@ -113,17 +127,18 @@ public class CharacterControl : MonoBehaviour
     }
 
     void UpdateAxeState(){
+        if(Axe != null){
+            if(AxeState == AxeStates.InHand){
+                Axe.parent = AxeHand; 
+                anim_control.SetAxeState(true); 
+            } else if(AxeState == AxeStates.InHolder){
+                Axe.parent = AxeHolder;
+                anim_control.SetAxeState(false);  
+            }
 
-        if(AxeState == AxeStates.InHand){
-            Axe.parent = AxeHand; 
-            anim_control.SetAxeState(true); 
-        } else if(AxeState == AxeStates.InHolder){
-            Axe.parent = AxeHolder;
-            anim_control.SetAxeState(false);  
+            Axe.transform.position = Axe.transform.parent.position;
+            Axe.transform.rotation = Axe.transform.parent.rotation;
         }
-
-        Axe.transform.position = Axe.transform.parent.position;
-        Axe.transform.rotation = Axe.transform.parent.rotation;
     }
 
     void Update(){
@@ -132,7 +147,14 @@ public class CharacterControl : MonoBehaviour
         bool landed = (!IsGrounded && grounded); 
         bool fall = (!grounded && IsGrounded); 
         IsGrounded = grounded;
+        
+        if(Axe != null)
+            PlayerMove(grounded, landed, fall); 
 
+    }
+
+
+    void PlayerMove(bool grounded, bool landed, bool fall){
 
         Vector3 user_dir = new Vector3(Input.GetAxis("Horizontal"), 
                                        0f,
@@ -248,6 +270,10 @@ public class CharacterControl : MonoBehaviour
                                             CharacterImpulse.Accel, CharacterImpulse.Deccel, 
                                             ref current_vertical_speed, JumpSpeed, GroundedGravity, AirborneGravity, 
                                             MaxFallSpeed, grounded, jump_trigger, 0f, true, Vector3.zero); 
+        } else if(CurrentState == CharacterState.cinematic){
+            // PLACEHOLDER. SHOULD BE SET WITHIN MOVECHARACTER CLASS
+            transform.position = Vector3.MoveTowards(transform.position, CinematicTargetPosition, Time.deltaTime * CinematicMaxMoveSpeed); 
+            transform.LookAt(ExecTarget.gameObject.transform.position); 
         }
         
 
@@ -295,8 +321,16 @@ public class CharacterControl : MonoBehaviour
             if(CurrentState == CharacterState.hit){
                 anim_control.HitAnimation("follow"); 
             } else {
-                Debug.Log("Called"); 
-                anim_control.HitAnimation("hit"); 
+                if(has_exec_target){
+                    if(CurrentState == CharacterState.cinematic){
+                        anim_control.Launch("ExecPunch");
+                        ExecTargetAnim.Launch("ExecPunch");
+                    } else{
+                        LaunchExecutionProcedure(); 
+                    }
+                } else {
+                    anim_control.HitAnimation("hit"); 
+                }
             }
         }
 
@@ -372,7 +406,6 @@ public class CharacterControl : MonoBehaviour
     }
 
     public void ChangeWeaponState(){
-        Debug.Log("Called weapon"); 
         if(AxeState == AxeStates.InHand){
             AxeState = AxeStates.InHolder; 
         } else if(AxeState == AxeStates.InHolder){
@@ -380,6 +413,56 @@ public class CharacterControl : MonoBehaviour
         }
 
         UpdateAxeState(); 
+    }
+
+    public void SetAxeState(string msg){
+        if(msg == "hand")
+            AxeState = AxeStates.InHand;
+        else
+            AxeState = AxeStates.InHolder; 
+
+        UpdateAxeState(); 
+    }
+
+    public void SetExecTarget(CharacterControl to_be_exec, CharacterAnimationControl exec_anim, Vector3 exec_pos){
+        has_exec_target = true; 
+        ExecTarget = to_be_exec; 
+        ExecTargetAnim = exec_anim; 
+        CinematicTargetPosition = exec_pos; 
+    }
+
+    public void EnterDizzy(){
+        CurrentState = CharacterState.dizzy; 
+        InitializeDizzy(); 
+    }
+
+    public void ExitDizzy(){
+        DestroyDizzy(); 
+    }
+
+    void LaunchExecutionProcedure(){
+        // Move character into place 
+        CurrentState = CharacterState.cinematic; // So it moves to the right place
+
+        // Set Axe in back 
+        SetAxeState("Holder"); 
+        // Launch animations on both characters
+        anim_control.Launch("ExecWulver"); 
+        ExecTarget.AcknowledgeExec(); 
+    }
+
+    void AcknowledgeExec(){
+        CurrentState = CharacterState.cinematic; 
+        anim_control.Launch("Exec"); 
+    }
+
+    void InitializeDizzy(){
+        ExecDetector = Instantiate(PrefabExecDetector, transform.position + transform.forward * InstantiateDistance, Quaternion.identity) as GameObject; 
+        ExecDetector.GetComponent<ExecutionDetector>().SetParent(this); 
+    }
+
+    void DestroyDizzy(){
+        Destroy(ExecDetector); 
     }
 
     public void SetRunningState(string new_state_name){

@@ -78,6 +78,16 @@ namespace Pathless{
             }
         }
 
+        public void ExternalInform(string msg, bool enter){
+            if(msg == "dizzy"){
+                if(enter){
+                    movement_control.EnterDizzy(); 
+                } else{
+                    movement_control.ExitDizzy(); 
+                }
+            }
+        }
+
 
         public void CallbackInform(string msg){
             if(msg == "dash_exit")

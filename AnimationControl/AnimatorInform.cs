@@ -7,9 +7,13 @@ namespace Pathless{
 
 public class AnimatorInform : StateMachineBehaviour {
 
+    [Header("Classic info")]
     public string Information;
     public string[] ResetOnEnter;
     public string[] ResetOnExit; 
+
+    [Header("External events")]
+    public string ExternalInfo; 
 
     [Header("Intermediate call")]
     public bool UseCallback; 
@@ -91,9 +95,9 @@ public class AnimatorInform : StateMachineBehaviour {
 
     void Call(Animator animator, bool state)
     {
-        
-
-        animator.gameObject.GetComponent<CharacterAnimationControl>().Inform(Information, state);
+        CharacterAnimationControl anim_control = animator.gameObject.GetComponent<CharacterAnimationControl>();  
+        anim_control.Inform(Information, state);
+        anim_control.ExternalInform(ExternalInfo, state); 
 
         if(IsHitAnimation){
             animator.gameObject.GetComponent<CharacterControl>().CombatInform(HitboxName, state, HitParameters);
@@ -103,7 +107,6 @@ public class AnimatorInform : StateMachineBehaviour {
             DoReset(animator, ResetOnEnter); 
         else
             DoReset(animator, ResetOnExit); 
-
     }
 
     void DoReset(Animator animator, string [] triggers){
