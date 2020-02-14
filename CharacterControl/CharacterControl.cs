@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Pathless; 
+using Cinemachine; 
 
 namespace Pathless{
 
@@ -15,6 +16,7 @@ public class CharacterControl : MonoBehaviour
     public enum CharacterState {normal, dash, aim, hit, dizzy, cinematic};
     [Header("Character States")] 
     public CharacterState CurrentState; 
+    public CinemachineFreeLook NormalCameraParameters; 
 
     public enum MovingState {normal, stop, turn}; 
     public MovingState MoveState; 
@@ -80,7 +82,10 @@ public class CharacterControl : MonoBehaviour
     [Header("Aim Variables")]
     public float AimSpeed = 10f; 
     public float AimAcceleration; 
-    public float AimAerialGravity; 
+    public float AimAerialGravity;
+    public float AimDirectionSpeed = 1f;  
+    public AimCameraTargetBehaviour AimCameraController;
+    public CinemachineFreeLook AimCameraParameters; 
 
 
     [Header("Fight")]
@@ -167,7 +172,7 @@ public class CharacterControl : MonoBehaviour
         bool change_weapon_state = Input.GetButtonDown("YButton"); 
         bool axe_action = Input.GetButton("R1"); 
         bool call_axe = Input.GetButton("L1") && AxeState == AxeStates.AxeOut; 
-
+        float aim_inc = Input.GetAxis("VerCam");  
 
         intensity = Vector3.SqrMagnitude(user_dir); 
         if(intensity < 0.2f * 0.2f)
@@ -180,6 +185,7 @@ public class CharacterControl : MonoBehaviour
 
         SendTriggerToAnimator(jump_input, landed, fall, dash_input, hit, run_turn, run_stop, change_weapon_state, call_axe);
         SendAnimatorBool(aim, axe_action); 
+        CharacterAimBehaviour(aim_inc); 
 
         MoveLogic(movement_dir, intensity, grounded);
         ResetTriggers(); 
@@ -202,6 +208,15 @@ public class CharacterControl : MonoBehaviour
 
         if(last_intensity - intensity > 0.7f)
             stop = true; 
+    }
+
+    void CharacterAimBehaviour(float aim_inc){
+        if(CurrentState == CharacterState.aim){
+            AimCameraController.UpdateAngle(aim_inc * AimDirectionSpeed * Time.deltaTime); 
+            float normalized_throw_angle; 
+            AimCameraController.GetThrowAngle(out ThrowAngle, out normalized_throw_angle); 
+            anim_control.FloatControl("ThrowAngle", normalized_throw_angle); 
+        }
     }
 
     void MoveLogic(Vector3 mvt_dir, float strengh, bool grounded){

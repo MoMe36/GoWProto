@@ -75,6 +75,12 @@ namespace Pathless{
             } else if(msg == "calling_axe"){
                 if(enter)
                     movement_control.CallAxe(); 
+            } else if(msg == "aim"){
+                if(enter){
+                    movement_control.EnterAim(); 
+                } else {
+                    movement_control.ExitAim(); 
+                }
             }
         }
 
@@ -102,6 +108,10 @@ namespace Pathless{
 
         public void BoolControl(string name, bool val){
             anim.SetBool(name, val); 
+        }
+
+        public void FloatControl(string name, float f){
+            anim.SetFloat(name, f); 
         }
 
         public void Launch(string trigger_name){

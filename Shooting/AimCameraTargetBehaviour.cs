@@ -29,13 +29,24 @@ namespace Pathless{
         }
 
         void Update(){
-            CurrentAngle = Mathf.Clamp(CurrentAngle, -MaxAngle, MaxAngle); 
-            // transform.position = ReferenceObject.position + Vector3.up * InitialHeight + ReferenceObject.rotation * Quaternion.AngleAxis(CurrentAngle, ReferenceObject.right) * InitialOffset;  
+            UpdateTargets(); 
+        }
+
+        void UpdateTargets(){
             Quaternion rot = ReferenceObject.rotation * Quaternion.AngleAxis(CurrentAngle, Vector3.right); 
             Vector3 center = ReferenceObject.position + Vector3.up * InitialHeight; 
             BehindCharacter.position = center + rot * InitialBehindOffset + ReferenceObject.right * LateralBehindOffset;
             FrontCharacter.position = center + rot * InitialFrontOffset; 
 
+        }
+
+        public void UpdateAngle(float angle_inc){
+            CurrentAngle = Mathf.Clamp(CurrentAngle + angle_inc, -MaxAngle, MaxAngle); 
+        }
+
+        public void GetThrowAngle(out float val, out float normalized_val){
+            val = CurrentAngle; 
+            normalized_val = CurrentAngle/MaxAngle; 
         }
 
 
