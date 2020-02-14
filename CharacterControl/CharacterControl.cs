@@ -269,7 +269,8 @@ public class CharacterControl : MonoBehaviour
 
         } else if(CurrentState == CharacterState.aim){
 
-            Vector3 look_at_ennemy = Ennemy.position - transform.position; 
+            // Vector3 look_at_ennemy = Ennemy.position - transform.position;
+            Vector3 look_at_ennemy = transform.forward;  
             CharacterMovement.MoveCharacter(controller, transform, 
                                     mvt_dir, intensity : strengh, ref current_horizontal_speed,  
                                     GroundSpeed, AimAcceleration, Decceleration, 
@@ -401,6 +402,16 @@ public class CharacterControl : MonoBehaviour
                 CombatMovement(hd);
             }
         }
+    }
+
+    public void EnterAim(){
+        AimCameraParameters.Priority = 20; 
+        CurrentState = CharacterState.aim; 
+        Debug.Log("Enter aim"); 
+    }
+
+    public void ExitAim(){
+        AimCameraParameters.Priority = 9;   
     }
 
     public void CombatMovement(HitData hd){
