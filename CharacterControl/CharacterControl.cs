@@ -84,6 +84,7 @@ public class CharacterControl : MonoBehaviour
     public float AimAcceleration; 
     public float AimAerialGravity;
     public float AimDirectionSpeed = 1f;  
+    public float AimAngleOffset = 15f; 
     public AimCameraTargetBehaviour AimCameraController;
     public CinemachineFreeLook AimCameraParameters; 
 
@@ -361,7 +362,7 @@ public class CharacterControl : MonoBehaviour
     public void DoThrow(){
         Axe.parent = null; 
         AxeState = AxeStates.AxeOut; 
-        AxeControl.SetThrowParams(Quaternion.AngleAxis(ThrowAngle, transform.right) * transform.forward * ThrowForce); 
+        AxeControl.SetThrowParams(Quaternion.AngleAxis(ThrowAngle + AimAngleOffset, transform.right) * transform.forward * ThrowForce); 
         anim_control.SetThrowParams(); 
     }
 
