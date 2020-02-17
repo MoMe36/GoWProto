@@ -18,6 +18,10 @@ namespace Pathless{
         float counter_duration; 
         float counter_delay; 
 
+        public Impulsion(){
+            Direction = Vector3.forward; 
+        }
+
         public Impulsion(float s, Vector3 v, float d, float a, float dd){
             Strengh = s; 
             Delay = d; 

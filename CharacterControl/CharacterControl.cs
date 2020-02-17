@@ -130,6 +130,11 @@ public class CharacterControl : MonoBehaviour
         }
 
         UpdateAxeState(); 
+        InitializeImpulse(); 
+    }
+
+    void InitializeImpulse(){   
+        CharacterImpulse = new Impulsion(); 
     }
 
     void UpdateAxeState(){
@@ -271,7 +276,12 @@ public class CharacterControl : MonoBehaviour
         } else if(CurrentState == CharacterState.aim){
 
             // Vector3 look_at_ennemy = Ennemy.position - transform.position;
-            Vector3 look_at_ennemy = transform.forward;  
+            Vector3 look_at_ennemy = transform.forward; 
+            // Vector3 look_at_ennemy =  Vector3.ProjectOnPlane(Camera.main.transform.forward, Vector3.up); //transform.forward;
+            // float angle_lookat = Vector3.SignedAngle(look_at_ennemy, transform.forward, Vector3.up); 
+            // look_at_ennemy = Mathf.Abs(angle_lookat) < 10f ? transform.forward : look_at_ennemy;  // TESTING TOLERANCE OF 5 DEGREES  
+            // Debug.DrawRay(transform.position, Vector3.ProjectOnPlane(transform.forward, Vector3.up), Color.blue, 1f); 
+            // Debug.DrawRay(transform.position, Vector3.ProjectOnPlane(Camera.main.transform.forward, Vector3.up), Color.red, 1f); 
             CharacterMovement.MoveCharacter(controller, transform, 
                                     mvt_dir, intensity : strengh, ref current_horizontal_speed,  
                                     GroundSpeed, AimAcceleration, Decceleration, 
@@ -408,7 +418,16 @@ public class CharacterControl : MonoBehaviour
     public void EnterAim(){
         AimCameraParameters.Priority = 20; 
         CurrentState = CharacterState.aim; 
-        Debug.Log("Enter aim"); 
+
+        // =======================================================================================================
+        // ==================================== PLACEHOLDER: Super quick rot ===================================== 
+        // THIS MAKES CHARACTER FACE THE CAMERA FOWARD DIRECTION WHEN ENTERING AIMING STATE
+        Vector3 target_pos = Vector3.ProjectOnPlane(Camera.main.transform.forward, Vector3.up); 
+        // Debug.DrawRay(transform.position + Vector3.up, 10f * target_pos, Color.red,1f); 
+        target_pos = transform.position + target_pos; 
+        transform.rotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(target_pos, Vector3.up), Vector3.up); 
+        // =======================================================================================================
+        // =======================================================================================================
     }
 
     public void ExitAim(){
