@@ -85,6 +85,7 @@ public class CharacterControl : MonoBehaviour
     public float AimAerialGravity;
     public float AimDirectionSpeed = 1f;  
     public float AimAngleOffset = 15f; 
+    public float AimRotationSpeed = 40f; 
     public AimCameraTargetBehaviour AimCameraController;
     public CinemachineFreeLook AimCameraParameters; 
 
@@ -179,6 +180,7 @@ public class CharacterControl : MonoBehaviour
         bool axe_action = Input.GetButton("R1"); 
         bool call_axe = Input.GetButton("L1") && AxeState == AxeStates.AxeOut; 
         float aim_inc = Input.GetAxis("VerCam");  
+        float aim_rot = Input.GetAxis("HorCam"); 
 
         intensity = Vector3.SqrMagnitude(user_dir); 
         if(intensity < 0.2f * 0.2f)
@@ -193,7 +195,7 @@ public class CharacterControl : MonoBehaviour
         SendAnimatorBool(aim, axe_action); 
         CharacterAimBehaviour(aim_inc); 
 
-        MoveLogic(movement_dir, intensity, grounded);
+        MoveLogic(movement_dir, intensity, grounded, aim_rot);
         ResetTriggers(); 
 
     }
@@ -225,7 +227,7 @@ public class CharacterControl : MonoBehaviour
         }
     }
 
-    void MoveLogic(Vector3 mvt_dir, float strengh, bool grounded){
+    void MoveLogic(Vector3 mvt_dir, float strengh, bool grounded, float aim_rot){
 
 
 
@@ -276,7 +278,7 @@ public class CharacterControl : MonoBehaviour
         } else if(CurrentState == CharacterState.aim){
 
             // Vector3 look_at_ennemy = Ennemy.position - transform.position;
-            Vector3 look_at_ennemy = transform.forward; 
+            Vector3 look_at_ennemy = Quaternion.AngleAxis(aim_rot * AimRotationSpeed * Time.deltaTime, Vector3.up) * transform.forward; 
             // Vector3 look_at_ennemy =  Vector3.ProjectOnPlane(Camera.main.transform.forward, Vector3.up); //transform.forward;
             // float angle_lookat = Vector3.SignedAngle(look_at_ennemy, transform.forward, Vector3.up); 
             // look_at_ennemy = Mathf.Abs(angle_lookat) < 10f ? transform.forward : look_at_ennemy;  // TESTING TOLERANCE OF 5 DEGREES  
