@@ -21,6 +21,7 @@ namespace Pathless{
             CharacterControl other_controller = other.gameObject.GetComponentInChildren<CharacterControl>();
             if(other_controller != null){
                 other_controller.SetExecTarget(parent_controller, parent_controller.gameObject.GetComponent<CharacterAnimationControl>(), transform.position); 
+                parent_controller.SetExecPerformer(other_controller, other_controller.gameObject.GetComponent<CharacterAnimationControl>()); 
             }
         }
 

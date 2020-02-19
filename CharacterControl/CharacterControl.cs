@@ -97,14 +97,17 @@ public class CharacterControl : MonoBehaviour
 
 
     // DIZZY STATE
-    [Header("DizzyState")]
+    [Header("Execution State")]
     public GameObject PrefabExecDetector;
     GameObject ExecDetector;  
     public float InstantiateDistance = 1f; 
     bool has_exec_target; 
+    // TARGET FOR EXECUTION 
     CharacterControl ExecTarget; 
-    CharacterAnimationControl ExecTargetAnim; 
-
+    CharacterAnimationControl ExecTargetAnim;
+    // CHARACTER PERFORMING THE EXECUTION 
+    [HideInInspector] public CharacterControl ExecPerformer; 
+    [HideInInspector] public CharacterAnimationControl ExecPerformerAnim; 
 
     [Header("DEBUG")]
     public bool ShowDebug; 
@@ -477,6 +480,11 @@ public class CharacterControl : MonoBehaviour
         ExecTarget = to_be_exec; 
         ExecTargetAnim = exec_anim; 
         CinematicTargetPosition = exec_pos; 
+    }
+
+    public void SetExecPerformer(CharacterControl current_exec_controller, CharacterAnimationControl current_exec_anim){
+        ExecPerformer = current_exec_controller; 
+        ExecPerformerAnim = current_exec_anim; 
     }
 
     public void EnterDizzy(){

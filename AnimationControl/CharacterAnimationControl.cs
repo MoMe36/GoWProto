@@ -11,11 +11,13 @@ namespace Pathless{
 
         Animator anim; 
         CharacterControl movement_control; 
+        CharacterLifePoints life_control; 
 
         void Start(){
 
             movement_control = GetComponent<CharacterControl>(); 
             anim = GetComponent<Animator>(); 
+            life_control = GetComponent<CharacterLifePoints>(); 
         }   
 
         void Update(){
@@ -90,6 +92,14 @@ namespace Pathless{
                     movement_control.EnterDizzy(); 
                 } else{
                     movement_control.ExitDizzy(); 
+                }
+            }
+
+            if(msg.StartsWith("damage")){
+                if(enter){
+                    string[] words = msg.Split(','); 
+                    int dmg_value = int.Parse(words[1]); 
+                    life_control.AcknowledgeDamages(dmg_value); 
                 }
             }
         }
