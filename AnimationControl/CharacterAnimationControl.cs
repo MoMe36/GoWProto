@@ -111,8 +111,11 @@ namespace Pathless{
                 movement_control.ExitDash(); 
             if(msg == "throw")
                 movement_control.DoThrow(); 
-            if(msg == "finish_exec_victim"){
+            if(msg == "exit_exec_victim"){
                     movement_control.EnterExecVictim(); 
+            } 
+            if(msg == "exit_exec_player"){
+                movement_control.ExitExecPlayer(); 
             }
         }
 

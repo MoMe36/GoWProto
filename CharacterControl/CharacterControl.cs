@@ -98,7 +98,7 @@ public class CharacterControl : MonoBehaviour
     Impulsion CharacterImpulse; 
 
 
-    // DIZZY STATE
+    // DIZZY + EXECUTION STATE
     [Header("Execution State")]
     public GameObject PrefabExecDetector;
     GameObject ExecDetector;  
@@ -114,6 +114,10 @@ public class CharacterControl : MonoBehaviour
     public float ExecutionProjectionForce;
     public float ExecutionAcceleration;
     public float ExecutionDelay = 2f; 
+    public CinemachineFreeLook ExecutionCameraController; 
+    // THESE ARE FOR THE VICTIM -> MUST BE PASSED TO THE PLAYER CHARACTERCONTROL FOR THE ExecutionCameraController
+    public Transform ExecutionCamLookAt; 
+    public Transform ExecutionCamFollow; 
 
     [Header("DEBUG")]
     public bool ShowDebug; 
@@ -439,7 +443,7 @@ public class CharacterControl : MonoBehaviour
     }
 
     public void EnterAim(){
-        AimCameraParameters.Priority = 20; 
+        SetAimCamera(); 
         CurrentState = CharacterState.aim; 
 
         // =======================================================================================================
@@ -453,13 +457,38 @@ public class CharacterControl : MonoBehaviour
         // =======================================================================================================
     }
 
-    public void ExitAim(){
+    void SetAimCamera(){
+        AimCameraParameters.Priority = 20; 
+    }
+
+    void ResetAimCamera(){
         AimCameraParameters.Priority = 9;   
+    }
+
+    void SetNormalCamera(){
+        NormalCameraParameters.Priority = 20; 
+    }
+
+    void ResetNormalCamera(){
+        NormalCameraParameters.Priority = 9; 
+    }
+
+    public void ExitAim(){
+        ResetAimCamera(); 
     }
 
     public void EnterExecVictim(){
         Destroy(gameObject, ExecutionDelay); 
         CurrentState = CharacterState.executed; 
+    }
+
+    public void ExitExecPlayer(){
+        ResetExecutionCamera(); 
+        SetNormalCamera(); 
+        has_exec_target = false; 
+        ExecTarget= null; 
+        ExecTargetAnim= null; 
+
     }
 
     public void CombatMovement(HitData hd){
@@ -503,6 +532,19 @@ public class CharacterControl : MonoBehaviour
         ExecTarget = to_be_exec; 
         ExecTargetAnim = exec_anim; 
         CinematicTargetPosition = exec_pos; 
+         
+    }
+
+    public void SetExecutionCamera(){
+        ExecutionCameraController.Priority = 20;
+        ExecutionCameraController.Follow = ExecTarget.ExecutionCamFollow; 
+        ExecutionCameraController.LookAt = ExecTarget.ExecutionCamLookAt;  
+    }
+
+    public void ResetExecutionCamera(){
+        ExecutionCameraController.Priority = 9;
+        ExecutionCameraController.Follow = null; 
+        ExecutionCameraController.LookAt = null; 
     }
 
     public void SetExecPerformer(CharacterControl current_exec_controller, CharacterAnimationControl current_exec_anim){
@@ -522,6 +564,9 @@ public class CharacterControl : MonoBehaviour
     void LaunchExecutionProcedure(){
         // Move character into place 
         CurrentState = CharacterState.cinematic; // So it moves to the right place
+
+        // Prepare camera 
+        SetExecutionCamera(); 
 
         // Set Axe in back 
         SetAxeState("Holder"); 
