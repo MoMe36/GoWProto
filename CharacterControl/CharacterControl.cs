@@ -13,7 +13,7 @@ public class CharacterControl : MonoBehaviour
     CharacterController controller; 
     CharacterAnimationControl anim_control; 
 
-    public enum CharacterState {normal, dash, aim, hit, dizzy, cinematic};
+    public enum CharacterState {normal, dash, aim, hit, dizzy, cinematic, executed};
     [Header("Character States")] 
     public CharacterState CurrentState; 
     public CinemachineFreeLook NormalCameraParameters; 
@@ -90,6 +90,8 @@ public class CharacterControl : MonoBehaviour
     public CinemachineFreeLook AimCameraParameters; 
 
 
+
+
     [Header("Fight")]
     // public face_directionHitbox[] Hitboxes; 
     public Dictionary<string, Hitbox> HitDict; 
@@ -108,6 +110,10 @@ public class CharacterControl : MonoBehaviour
     // CHARACTER PERFORMING THE EXECUTION 
     [HideInInspector] public CharacterControl ExecPerformer; 
     [HideInInspector] public CharacterAnimationControl ExecPerformerAnim; 
+    public Vector3 ExecutionProjectionDirection = Vector3.forward;
+    public float ExecutionProjectionForce;
+    public float ExecutionAcceleration;
+    public float ExecutionDelay = 2f; 
 
     [Header("DEBUG")]
     public bool ShowDebug; 
@@ -165,6 +171,11 @@ public class CharacterControl : MonoBehaviour
         
         if(Axe != null)
             PlayerMove(grounded, landed, fall); 
+        else{
+            if(CurrentState == CharacterState.executed){
+                MoveLogic(Vector3.zero, 1f, false, 0f); 
+            }
+        }
 
     }
 
@@ -306,6 +317,13 @@ public class CharacterControl : MonoBehaviour
             // PLACEHOLDER. SHOULD BE SET WITHIN MOVECHARACTER CLASS
             transform.position = Vector3.MoveTowards(transform.position, CinematicTargetPosition, Time.deltaTime * CinematicMaxMoveSpeed); 
             transform.LookAt(ExecTarget.gameObject.transform.position); 
+        } else if(CurrentState == CharacterState.executed){
+            // Debug.Log("Called in executed state" + ExecutionAcceleration.ToString() + "," + ExecutionDecceleration.ToString() + "," +
+            //           current_horizontal_speed.ToString() + "," + ExecutionProjectionForce.ToString() + "," + strengh.ToString());
+            CharacterMovement.MoveCharacter(controller, transform, transform.rotation * ExecutionProjectionDirection, intensity : strengh,
+                                            ref current_horizontal_speed, ExecutionProjectionForce, accel: Decceleration, decel: ExecutionAcceleration,
+                                            ref current_vertical_speed, 0f, GroundedGravity, AirborneGravity, MaxFallSpeed, 
+                                            grounded, false, rotation_speed: 0f, do_rotate: false, face_direction:Vector3.zero); 
         }
         
 
@@ -437,6 +455,11 @@ public class CharacterControl : MonoBehaviour
 
     public void ExitAim(){
         AimCameraParameters.Priority = 9;   
+    }
+
+    public void EnterExecVictim(){
+        Destroy(gameObject, ExecutionDelay); 
+        CurrentState = CharacterState.executed; 
     }
 
     public void CombatMovement(HitData hd){

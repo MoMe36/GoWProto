@@ -17,7 +17,7 @@ public class AnimatorInform : StateMachineBehaviour {
 
     [Header("Intermediate call")]
     public bool UseCallback; 
-    public float AfterRatio = 0.8f;
+    [Range(0f,1f)] public float AfterRatio = 0.8f;
     public string AfterInformation;  
     public bool OnlyOnce = true; 
     bool only_once_counter; 

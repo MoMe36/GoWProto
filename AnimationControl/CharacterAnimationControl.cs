@@ -102,6 +102,7 @@ namespace Pathless{
                     life_control.AcknowledgeDamages(dmg_value); 
                 }
             }
+
         }
 
 
@@ -110,6 +111,9 @@ namespace Pathless{
                 movement_control.ExitDash(); 
             if(msg == "throw")
                 movement_control.DoThrow(); 
+            if(msg == "finish_exec_victim"){
+                    movement_control.EnterExecVictim(); 
+            }
         }
 
         public void InformEvent(string msg){
