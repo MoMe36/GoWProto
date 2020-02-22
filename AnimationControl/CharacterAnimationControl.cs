@@ -117,6 +117,13 @@ namespace Pathless{
             if(msg == "exit_exec_player"){
                 movement_control.ExitExecPlayer(); 
             }
+            if(msg.StartsWith("shake")){
+                // string[] words = msg.Split('_'); 
+                // float shake_duration = float.Parse(words[1]); 
+                // float shake_amplitude = float.Parse(words[2]);
+                // float shake_freq = float.Parse(words[3]);
+                movement_control.LaunchCameraShake(0f, 0f, 0f);  
+            }
         }
 
         public void InformEvent(string msg){

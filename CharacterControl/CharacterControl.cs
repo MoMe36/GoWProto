@@ -11,7 +11,9 @@ public class CharacterControl : MonoBehaviour
 {
 
     CharacterController controller; 
-    CharacterAnimationControl anim_control; 
+    CharacterAnimationControl anim_control;
+    CinemachineFreeLook current_camera_params;  
+
 
     public enum CharacterState {normal, dash, aim, hit, dizzy, cinematic, executed};
     [Header("Character States")] 
@@ -35,6 +37,7 @@ public class CharacterControl : MonoBehaviour
 
     [Header("Camera")]
     public Transform CurrentCamera; 
+    public CinemachineImpulseSource CharacterImpulses; 
 
     [Header("Ground Movement Variables")]
     public float GroundSpeed; 
@@ -145,6 +148,7 @@ public class CharacterControl : MonoBehaviour
 
         UpdateAxeState(); 
         InitializeImpulse(); 
+        SetNormalCamera(); 
     }
 
     void InitializeImpulse(){   
@@ -181,10 +185,15 @@ public class CharacterControl : MonoBehaviour
             }
         }
 
+
     }
 
 
     void PlayerMove(bool grounded, bool landed, bool fall){
+        // DEBUG 
+        if(Input.GetKey(KeyCode.Space)){
+            LaunchCameraShake(0f,0f, 0f);
+        }
 
         Vector3 user_dir = new Vector3(Input.GetAxis("Horizontal"), 
                                        0f,
@@ -459,6 +468,7 @@ public class CharacterControl : MonoBehaviour
 
     void SetAimCamera(){
         AimCameraParameters.Priority = 20; 
+        current_camera_params = AimCameraParameters; 
     }
 
     void ResetAimCamera(){
@@ -467,11 +477,36 @@ public class CharacterControl : MonoBehaviour
 
     void SetNormalCamera(){
         NormalCameraParameters.Priority = 20; 
+        current_camera_params = NormalCameraParameters; 
     }
 
     void ResetNormalCamera(){
         NormalCameraParameters.Priority = 9; 
     }
+
+    public void LaunchCameraShake(float shake_duration, float amplitude, float freq){
+        CharacterImpulses.GenerateImpulse(transform.position); 
+        // Invoke("StopCameraShake", shake_duration); 
+    }
+
+    void StopCameraShake(){
+        // current_camera_params.m_AmplitudeGain = 0f; 
+    }
+
+
+    public void SetExecutionCamera(){
+        ExecutionCameraController.Priority = 20;
+        ExecutionCameraController.Follow = ExecTarget.ExecutionCamFollow; 
+        ExecutionCameraController.LookAt = ExecTarget.ExecutionCamLookAt;  
+        current_camera_params = ExecutionCameraController; 
+    }
+
+    public void ResetExecutionCamera(){
+        ExecutionCameraController.Priority = 9;
+        ExecutionCameraController.Follow = null; 
+        ExecutionCameraController.LookAt = null; 
+    }
+
 
     public void ExitAim(){
         ResetAimCamera(); 
@@ -533,18 +568,6 @@ public class CharacterControl : MonoBehaviour
         ExecTargetAnim = exec_anim; 
         CinematicTargetPosition = exec_pos; 
          
-    }
-
-    public void SetExecutionCamera(){
-        ExecutionCameraController.Priority = 20;
-        ExecutionCameraController.Follow = ExecTarget.ExecutionCamFollow; 
-        ExecutionCameraController.LookAt = ExecTarget.ExecutionCamLookAt;  
-    }
-
-    public void ResetExecutionCamera(){
-        ExecutionCameraController.Priority = 9;
-        ExecutionCameraController.Follow = null; 
-        ExecutionCameraController.LookAt = null; 
     }
 
     public void SetExecPerformer(CharacterControl current_exec_controller, CharacterAnimationControl current_exec_anim){
