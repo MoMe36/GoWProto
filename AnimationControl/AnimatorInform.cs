@@ -24,7 +24,7 @@ public class AnimatorInform : StateMachineBehaviour {
 
     [Header("HitInfo")]
     public bool IsHitAnimation; 
-    public string HitboxName; 
+    public string[] HitboxName; 
     public HitData HitParameters; 
 
     [Header("LayerWeight")]
@@ -100,7 +100,8 @@ public class AnimatorInform : StateMachineBehaviour {
         anim_control.ExternalInform(ExternalInfo, state); 
 
         if(IsHitAnimation){
-            animator.gameObject.GetComponent<CharacterControl>().CombatInform(HitboxName, state, HitParameters);
+            foreach(string hb_name in HitboxName)
+                animator.gameObject.GetComponent<CharacterControl>().CombatInform(hb_name, state, HitParameters);
         }
 
         if(state)

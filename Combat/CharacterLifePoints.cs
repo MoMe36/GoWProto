@@ -27,13 +27,21 @@ public class CharacterLifePoints : MonoBehaviour
 
     public void AcknowledgeDamages(int damage_value){
         CurrentLifePoints -= damage_value; 
-        if(CurrentLifePoints < 0)   
-            LaunchExecution(); 
+        if(CurrentLifePoints < 0){
+            if(char_control.IsCinematic())
+                LaunchExecution();
+            else
+                LaunchDeath();  
+        }
     }
 
     public void LaunchExecution(){
         anim_control.BoolControl("FinishExec", true);
         char_control.ExecPerformerAnim.BoolControl("FinishExec", true);  
+    }
+
+    public void LaunchDeath(){
+        char_control.LaunchDeath(); 
     }
 
 

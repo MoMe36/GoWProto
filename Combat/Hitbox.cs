@@ -13,9 +13,13 @@ public class Hitbox : MonoBehaviour
     public enum HBType {hit, hurt}; 
     public HBType BoxType; 
     public string BoxName; 
+    [HideInInspector] public HitData current_hit_data; 
 
     [Header("VFX")]
     public GameObject ImpactEffect; 
+
+    // MainController
+    [HideInInspector] public CharacterControl main_controller; 
 
     void Start(){
 
@@ -25,23 +29,27 @@ public class Hitbox : MonoBehaviour
 
     }
 
+    public void SetMainController(CharacterControl control){
+        main_controller = control; 
+    }
+
     public void SetState(bool state, HitData hd){
         Active = state; 
         if(Active) 
-            Activate();
+            Activate(hd);
         else
             Deactivate();
     }
 
-    void Activate(){
+    void Activate(HitData hd){
         Active = true; 
+        current_hit_data = hd; 
         // ADD ENABLE VFX
-
         LaunchVFX();  
     }
 
     void LaunchVFX(){
-        GameObject effect = Instantiate(ImpactEffect, transform.position, ImpactEffect.transform.rotation) as GameObject; 
+        // GameObject effect = Instantiate(ImpactEffect, transform.position, ImpactEffect.transform.rotation) as GameObject; 
     }
 
     void Deactivate(){
@@ -49,15 +57,19 @@ public class Hitbox : MonoBehaviour
         // REMOVE VFX
     }
 
-    void ReceiveDamage(){
-        Debug.Log("Detected"); 
+    void ReceiveDamage(int damage){
+        main_controller.AcknowledgeImpact(damage); 
     }
 
     void OnTriggerEnter(Collider other){
         if(Active){
             Hitbox other_hb = other.GetComponent<Hitbox>(); 
             if(other_hb != null){
-                other_hb.ReceiveDamage(); 
+                if(other_hb.main_controller != main_controller){
+                    if(other_hb.BoxType == HBType.hurt)
+                        other_hb.ReceiveDamage(current_hit_data.Damage); 
+                }
+                    
             }
         }
     }

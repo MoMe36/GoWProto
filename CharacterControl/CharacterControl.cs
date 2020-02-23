@@ -12,10 +12,11 @@ public class CharacterControl : MonoBehaviour
 
     CharacterController controller; 
     CharacterAnimationControl anim_control;
+    CharacterLifePoints life_control; 
     CinemachineFreeLook current_camera_params;  
 
 
-    public enum CharacterState {normal, dash, aim, hit, dizzy, cinematic, executed};
+    public enum CharacterState {normal, dodge, aim, hit, dizzy, cinematic, impact, executed};
     [Header("Character States")] 
     public CharacterState CurrentState; 
     public CinemachineFreeLook NormalCameraParameters; 
@@ -79,8 +80,8 @@ public class CharacterControl : MonoBehaviour
     public float CinematicMaxMoveSpeed; 
 
     [Header("Dash Variables")]
-    public float DashForce = 10f; 
-    public float DashAcceleration; 
+    public float DodgeForce = 10f; 
+    public float DodgeAcceleration; 
 
     [Header("Aim Variables")]
     public float AimSpeed = 10f; 
@@ -137,6 +138,7 @@ public class CharacterControl : MonoBehaviour
     void Start(){
         controller = GetComponent<CharacterController>(); 
         anim_control = GetComponent<CharacterAnimationControl>(); 
+        life_control = GetComponent<CharacterLifePoints>(); 
 
         LastPosition = transform.position; 
         HitDict = CharacterCombat.GetHBDict(gameObject); 
@@ -146,9 +148,23 @@ public class CharacterControl : MonoBehaviour
             initial_tilt_rotation = TiltTarget.transform.rotation; 
         }
 
+        SetHitboxController(); 
         UpdateAxeState(); 
         InitializeImpulse(); 
         SetNormalCamera(); 
+    }
+
+    void SetHitboxController(){
+        if(HitDict.Count > 0){
+            foreach(string hb_name in HitDict.Keys)
+                HitDict[hb_name].SetMainController(this);
+        }
+
+        Debug.Log("Character: " + gameObject.name  + " has " + HitDict.Count.ToString() + " HB"); 
+        // if(HurtDict.Keys().Length > 0){
+        //     foreach(string hb_name in HurtDict.Keys())
+        //         HitDict[hb_name].SetMainController(this); 
+        // }
     }
 
     void InitializeImpulse(){   
@@ -200,7 +216,7 @@ public class CharacterControl : MonoBehaviour
                                        Input.GetAxis("Vertical")); 
 
         bool jump_input = Input.GetButtonDown("AButton"); 
-        bool dash_input = Input.GetButtonDown("BButton"); 
+        bool dodge_input = Input.GetButtonDown("BButton"); 
         bool aim = Input.GetAxis("L2") > 0.2f ? true : false; 
         bool hit = Input.GetButtonDown("XButton"); 
         bool change_weapon_state = Input.GetButtonDown("YButton"); 
@@ -218,7 +234,7 @@ public class CharacterControl : MonoBehaviour
         bool run_turn, run_stop; 
         RunStopsLogic(out run_turn, out run_stop); 
 
-        SendTriggerToAnimator(jump_input, landed, fall, dash_input, hit, run_turn, run_stop, change_weapon_state, call_axe);
+        SendTriggerToAnimator(jump_input, landed, fall, dodge_input, hit, run_turn, run_stop, change_weapon_state, call_axe);
         SendAnimatorBool(aim, axe_action); 
         CharacterAimBehaviour(aim_inc); 
 
@@ -289,10 +305,11 @@ public class CharacterControl : MonoBehaviour
             } 
 
 
-        } else if(CurrentState == CharacterState.dash){
+        } else if(CurrentState == CharacterState.dodge){
+            
             CharacterMovement.MoveCharacter(controller, transform, 
                                     mvt_dir, intensity :1f, ref current_horizontal_speed,  
-                                    DashForce, DashAcceleration, Decceleration, 
+                                    DodgeForce, DodgeAcceleration, Decceleration, 
                                     ref current_vertical_speed, JumpSpeed, 
                                     GroundedGravity, AirborneGravity, MaxFallSpeed, 
                                     true, false, 0f, false, Vector3.zero);
@@ -349,7 +366,7 @@ public class CharacterControl : MonoBehaviour
     }
 
     void SendTriggerToAnimator(bool jump, bool landed, bool fall, 
-                               bool dash, bool hit, bool run_turn, 
+                               bool dodge, bool hit, bool run_turn, 
                                bool run_stop, bool change_weapon_state, 
                                bool call_axe){
         if(jump){
@@ -368,8 +385,12 @@ public class CharacterControl : MonoBehaviour
         }
 
         if(IsGrounded){
-            if(dash){
-                anim_control.Launch("dash"); 
+            if(dodge){
+                if(CurrentState == CharacterState.dodge){
+                    anim_control.Launch("dodge_second"); 
+                } else{
+                    anim_control.Launch("dodge_first"); 
+                }
             }
         }
 
@@ -443,7 +464,9 @@ public class CharacterControl : MonoBehaviour
     }
 
     public void CombatInform(string hb_name, bool enter, HitData hd){
-        if(HitDict.ContainsKey(hb_name)){
+        if(hb_name == "joker"){
+            CombatMovement(hd); 
+        } else if(HitDict.ContainsKey(hb_name)){
             HitDict[hb_name].SetState(enter, hd);
             if(enter){
                 CombatMovement(hd);
@@ -466,9 +489,32 @@ public class CharacterControl : MonoBehaviour
         // =======================================================================================================
     }
 
+    public bool IsExecuted(){
+        return CurrentState == CharacterState.executed; 
+    }
+
+    public bool IsCinematic(){
+        return CurrentState == CharacterState.cinematic; 
+    }
+
+    public void LaunchDeath(){
+        Destroy(gameObject, 1f); 
+    }
+
+    public void AcknowledgeImpact(int damages){
+        anim_control.Launch("impact"); 
+        life_control.AcknowledgeDamages(damages); 
+    }
+
+    public void EnterImpact(){
+        CurrentState = CharacterState.impact;
+    }
+
     void SetAimCamera(){
         AimCameraParameters.Priority = 20; 
         current_camera_params = AimCameraParameters; 
+        
+        NormalCameraParameters.m_Transitions.m_InheritPosition = true; 
     }
 
     void ResetAimCamera(){
@@ -499,12 +545,16 @@ public class CharacterControl : MonoBehaviour
         ExecutionCameraController.Follow = ExecTarget.ExecutionCamFollow; 
         ExecutionCameraController.LookAt = ExecTarget.ExecutionCamLookAt;  
         current_camera_params = ExecutionCameraController; 
+
+        // Prevent inheriting position (otherwise unsatisfying point of view)
+        NormalCameraParameters.m_Transitions.m_InheritPosition = false; 
     }
 
     public void ResetExecutionCamera(){
         ExecutionCameraController.Priority = 9;
         ExecutionCameraController.Follow = null; 
         ExecutionCameraController.LookAt = null; 
+
     }
 
 
@@ -536,8 +586,8 @@ public class CharacterControl : MonoBehaviour
     public void SetState(string new_state_name){
         if(new_state_name == "normal")
             CurrentState = CharacterState.normal; 
-        else if(new_state_name == "dash")
-            CurrentState = CharacterState.dash; 
+        else if(new_state_name == "dodge")
+            CurrentState = CharacterState.dodge; 
         else if(new_state_name == "hit")
             CurrentState = CharacterState.hit; 
 

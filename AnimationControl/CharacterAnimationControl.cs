@@ -53,9 +53,9 @@ namespace Pathless{
             //     SetWeapon(); 
             // }
             
-            if(msg == "dash"){
+            if(msg == "dodge"){
                 if(enter){
-                    movement_control.SetState("dash"); 
+                    movement_control.SetState("dodge"); 
                 } 
             } else if(msg == "move"){
                 if(enter){
@@ -83,6 +83,9 @@ namespace Pathless{
                 } else {
                     movement_control.ExitAim(); 
                 }
+            } else if(msg == "impact"){
+                if(enter)
+                    movement_control.EnterImpact(); 
             }
         }
 
