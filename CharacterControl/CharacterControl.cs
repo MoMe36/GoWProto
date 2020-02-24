@@ -123,6 +123,18 @@ public class CharacterControl : MonoBehaviour
     public Transform ExecutionCamLookAt; 
     public Transform ExecutionCamFollow; 
 
+
+    // ========================================================================
+    // ========================================================================
+    // ======================== ENEMY CONTROL =================================
+
+    public delegate void EnemyInputs(out Vector3 d1);
+    public EnemyInputs EnemyInput;
+
+    // ========================================================================
+    // ========================================================================
+
+
     [Header("DEBUG")]
     public bool ShowDebug; 
     public bool IsGrounded;  
@@ -160,7 +172,7 @@ public class CharacterControl : MonoBehaviour
                 HitDict[hb_name].SetMainController(this);
         }
 
-        Debug.Log("Character: " + gameObject.name  + " has " + HitDict.Count.ToString() + " HB"); 
+        // Debug.Log("Character: " + gameObject.name  + " has " + HitDict.Count.ToString() + " HB"); 
         // if(HurtDict.Keys().Length > 0){
         //     foreach(string hb_name in HurtDict.Keys())
         //         HitDict[hb_name].SetMainController(this); 
@@ -196,12 +208,20 @@ public class CharacterControl : MonoBehaviour
         if(Axe != null)
             PlayerMove(grounded, landed, fall); 
         else{
+            EnemyMove(grounded, landed, fall); 
             if(CurrentState == CharacterState.executed){
                 MoveLogic(Vector3.zero, 1f, false, 0f); 
             }
         }
 
 
+    }
+
+    void EnemyMove(bool grounded, bool landed, bool fall){
+        Vector3 mvt = Vector3.zero; 
+        EnemyInput(out mvt); 
+        float enemy_mvt_intensity = Vector3.SqrMagnitude(mvt); 
+        MoveLogic(mvt, enemy_mvt_intensity > 0.2f * 0.2f ? Mathf.Clamp01(enemy_mvt_intensity) : 0f, grounded, 0f); 
     }
 
 
@@ -513,7 +533,7 @@ public class CharacterControl : MonoBehaviour
     void SetAimCamera(){
         AimCameraParameters.Priority = 20; 
         current_camera_params = AimCameraParameters; 
-        
+
         NormalCameraParameters.m_Transitions.m_InheritPosition = true; 
     }
 
