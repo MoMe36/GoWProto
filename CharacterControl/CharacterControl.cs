@@ -80,8 +80,11 @@ public class CharacterControl : MonoBehaviour
     public float CinematicMaxMoveSpeed; 
 
     [Header("Dash Variables")]
-    public float DodgeForce = 10f; 
+    public float DodgeStrengh = 10f; 
     public float DodgeAcceleration; 
+    public bool UseImpulseForDodge;
+    public bool FaceDodgeDirection; 
+    public float DodgeRotationSpeed = 150f;  
 
     [Header("Aim Variables")]
     public float AimSpeed = 10f; 
@@ -128,8 +131,9 @@ public class CharacterControl : MonoBehaviour
     // ========================================================================
     // ======================== ENEMY CONTROL =================================
 
-    public delegate void EnemyInputs(out Vector3 d1);
+    public delegate void EnemyInputs(out Vector3 v1, out bool b1);
     public EnemyInputs EnemyInput;
+    bool IsEnemy; 
 
     // ========================================================================
     // ========================================================================
@@ -160,10 +164,13 @@ public class CharacterControl : MonoBehaviour
             initial_tilt_rotation = TiltTarget.transform.rotation; 
         }
 
+        IsEnemy = !(GetComponent<EnemyAI>() == null); 
+
         SetHitboxController(); 
         UpdateAxeState(); 
-        InitializeImpulse(); 
-        SetNormalCamera(); 
+        InitializeImpulse();
+        if(!IsEnemy) 
+            SetNormalCamera(); 
     }
 
     void SetHitboxController(){
@@ -218,9 +225,11 @@ public class CharacterControl : MonoBehaviour
     }
 
     void EnemyMove(bool grounded, bool landed, bool fall){
-        Vector3 mvt = Vector3.zero; 
-        EnemyInput(out mvt); 
+        Vector3 mvt = Vector3.zero;
+        bool dodge_input = false;  
+        EnemyInput(out mvt, out dodge_input); 
         float enemy_mvt_intensity = Vector3.SqrMagnitude(mvt); 
+        SendTriggerToAnimator(false, landed, fall, dodge_input, false, false, false, false, false); 
         MoveLogic(mvt, enemy_mvt_intensity > 0.2f * 0.2f ? Mathf.Clamp01(enemy_mvt_intensity) : 0f, grounded, 0f); 
     }
 
@@ -326,13 +335,28 @@ public class CharacterControl : MonoBehaviour
 
 
         } else if(CurrentState == CharacterState.dodge){
-            
+            float dodge_accel, dodge_decel, dodge_strengh, dodge_intensity;
+            if(UseImpulseForDodge){
+                dodge_intensity = CharacterImpulse.Step() ? 1f : 0f; 
+                dodge_accel = CharacterImpulse.Accel; 
+                dodge_decel = CharacterImpulse.Deccel;
+                dodge_strengh = CharacterImpulse.Strengh; 
+                Debug.Log("using impulse: " + dodge_intensity.ToString() + "," + dodge_accel.ToString() + "," + mvt_dir.ToString() + "," + dodge_strengh.ToString()); 
+            } else{
+                dodge_accel = DodgeAcceleration; 
+                dodge_decel = Decceleration; 
+                dodge_strengh = DodgeStrengh; 
+                dodge_intensity=  1f; 
+            }
+
             CharacterMovement.MoveCharacter(controller, transform, 
-                                    mvt_dir, intensity :1f, ref current_horizontal_speed,  
-                                    DodgeForce, DodgeAcceleration, Decceleration, 
-                                    ref current_vertical_speed, JumpSpeed, 
-                                    GroundedGravity, AirborneGravity, MaxFallSpeed, 
-                                    true, false, 0f, false, Vector3.zero);
+                                        mvt_dir, intensity :dodge_intensity, ref current_horizontal_speed,  
+                                        dodge_strengh, dodge_accel, dodge_decel, 
+                                        ref current_vertical_speed, JumpSpeed, 
+                                        GroundedGravity, AirborneGravity, MaxFallSpeed, 
+                                        true, false, rotation_speed:DodgeRotationSpeed, do_rotate: FaceDodgeDirection, Vector3.zero);
+
+            // Debug.Log("DODGE FOR " + gameObject.name + " Vec " + mvt_dir.ToString()); 
 
             // if(AllowTilt)   // RESET TILT VALUE
             //     CharacterMovement.TiltCharacter(transform, transform.forward, initial_tilt_rotation,  

@@ -139,7 +139,7 @@ public class CharacterMovement : MonoBehaviour
 
         bool touched = false; 
         if(Physics.Raycast(ray, out hit, height, layer_mask)){
-            Debug.Log(hit.collider.gameObject); 
+            // Debug.Log(hit.collider.gameObject); 
             touched = true;
         }
         return touched; 
