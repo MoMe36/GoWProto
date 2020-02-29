@@ -86,7 +86,19 @@ namespace Pathless{
             } else if(msg == "impact"){
                 if(enter)
                     movement_control.EnterImpact(); 
+            } else if(msg == "sprint_attack"){
+                if(enter){
+                    movement_control.EnterEnemySprint(); 
+                }
+            } else if(msg == "move_e"){
+                if(enter){
+                    movement_control.EnterEnemyNormal(); 
+                }
+            } else if(msg == "walk_around_e"){
+                if(enter)
+                    movement_control.EnterEnemyWalkAround(); 
             }
+
         }
 
         public void ExternalInform(string msg, bool enter){

@@ -131,7 +131,7 @@ public class CharacterControl : MonoBehaviour
     // ========================================================================
     // ======================== ENEMY CONTROL =================================
 
-    public delegate void EnemyInputs(out Vector3 v1, out bool b1);
+    public delegate void EnemyInputs(out Vector3 v1, out bool b1, out bool b2, out bool b3, out bool b4);
     public EnemyInputs EnemyInput;
     bool IsEnemy; 
 
@@ -227,10 +227,49 @@ public class CharacterControl : MonoBehaviour
     void EnemyMove(bool grounded, bool landed, bool fall){
         Vector3 mvt = Vector3.zero;
         bool dodge_input = false;  
-        EnemyInput(out mvt, out dodge_input); 
+        bool sprint_input = false; 
+        bool sprint_attack = false;
+        bool walk_around = false;  
+        EnemyInput(out mvt, out dodge_input, out sprint_input, out sprint_attack, out walk_around); 
         float enemy_mvt_intensity = Vector3.SqrMagnitude(mvt); 
         SendTriggerToAnimator(false, landed, fall, dodge_input, false, false, false, false, false); 
-        MoveLogic(mvt, enemy_mvt_intensity > 0.2f * 0.2f ? Mathf.Clamp01(enemy_mvt_intensity) : 0f, grounded, 0f); 
+        if(sprint_input)
+            anim_control.Launch("sprint_attack"); 
+        if(sprint_attack)
+            anim_control.BoolControl("in_range", true); 
+        if(walk_around)
+            anim_control.Launch("walk_around"); 
+
+        if(GetComponent<EnemyAI>().IsWalkAround()){
+
+            Vector3 look_at_ennemy = GetComponent<EnemyAI>().GetLookDirection(); 
+           
+            CharacterMovement.MoveCharacter(controller, transform, 
+                                    mvt, intensity : 1f, ref current_horizontal_speed,  
+                                    GroundSpeed, AimAcceleration, Decceleration, 
+                                    ref current_vertical_speed, JumpSpeed, 
+                                    GroundedGravity, AimAerialGravity, MaxFallSpeed, 
+                                    grounded, jump_trigger, RotationSpeed, false, face_direction: look_at_ennemy);
+        } else{
+            MoveLogic(mvt, enemy_mvt_intensity > 0.2f * 0.2f ? Mathf.Clamp01(enemy_mvt_intensity) : 0f, grounded, 0f); 
+        } 
+            
+    }
+
+    public void EnterEnemySprint(){
+        CurrentState = CharacterState.normal; 
+        GetComponent<EnemyAI>().EnterSprint(); 
+    }
+
+
+    public void EnterEnemyNormal(){
+        CurrentState = CharacterState.normal; 
+        GetComponent<EnemyAI>().EnterNormal(); 
+    }
+
+    public void EnterEnemyWalkAround(){
+        CurrentState = CharacterState.normal; 
+        GetComponent<EnemyAI>().EnterWalkAround(); 
     }
 
 
@@ -341,7 +380,7 @@ public class CharacterControl : MonoBehaviour
                 dodge_accel = CharacterImpulse.Accel; 
                 dodge_decel = CharacterImpulse.Deccel;
                 dodge_strengh = CharacterImpulse.Strengh; 
-                Debug.Log("using impulse: " + dodge_intensity.ToString() + "," + dodge_accel.ToString() + "," + mvt_dir.ToString() + "," + dodge_strengh.ToString()); 
+                // Debug.Log("using impulse: " + dodge_intensity.ToString() + "," + dodge_accel.ToString() + "," + mvt_dir.ToString() + "," + dodge_strengh.ToString()); 
             } else{
                 dodge_accel = DodgeAcceleration; 
                 dodge_decel = Decceleration; 
@@ -510,6 +549,7 @@ public class CharacterControl : MonoBehaviour
     public void CombatInform(string hb_name, bool enter, HitData hd){
         if(hb_name == "joker"){
             CombatMovement(hd); 
+            Debug.Log("Joker movement"); 
         } else if(HitDict.ContainsKey(hb_name)){
             HitDict[hb_name].SetState(enter, hd);
             if(enter){
