@@ -17,6 +17,11 @@ public class EnemyAI : MonoBehaviour
 
     Vector3 last_mvt_input; 
 
+    [Header("Brain parameters")]
+    public float ReflexionTime = 5f; 
+    [SerializeField] float reflexion_counter;
+    public bool NextActionReady; 
+
     [Header("Move parameters")]
     public float StoppingDistance = 3f; 
 
@@ -33,8 +38,10 @@ public class EnemyAI : MonoBehaviour
     public Transform TargetPoint; 
     public bool DEBUG_Walk; 
     public bool DEBUG_Dodge; 
-    public bool DEBUG_SprintAttack; 
+    public bool DEBUG_SprintAttack;
+    public bool DEBUG_Hit;  
     public bool DEBUG_WalkAround; 
+    public bool MANUAL_CONTROL; 
 
     public Transform DebugTargetWalkAround;
 
@@ -43,6 +50,7 @@ public class EnemyAI : MonoBehaviour
         control = GetComponent<CharacterControl>(); 
         anim_control = GetComponent<CharacterAnimationControl>(); 
         control.EnemyInput = ai_Inputs; 
+        ResetBrain(); 
     }
 
     void Update(){
@@ -57,25 +65,82 @@ public class EnemyAI : MonoBehaviour
     }
 
 
-    void AI_Brain(out bool walk, out bool dodge, out bool sprint_attack, out bool walk_around){
-        walk = DEBUG_Walk; 
-        dodge = DEBUG_Dodge; 
-        sprint_attack = DEBUG_SprintAttack; 
-        walk_around = DEBUG_WalkAround; 
+    void AI_Brain(out bool walk, out bool dodge, out bool sprint_attack, out bool walk_around, out bool hit){
 
-        if(dodge)
-            DEBUG_Dodge = false; 
-        if(sprint_attack)
-            DEBUG_SprintAttack = false; 
-        if(walk_around) 
-            DEBUG_WalkAround = false; 
+        // // ===============================================================================================
+        // // ===============================================================================================
+        // // ===================================== PROBABILISTIC SM ======================================== 
+
+        walk = false; 
+        dodge = false; 
+        sprint_attack = false; 
+        walk_around = false; 
+        hit = false;    
+        // Debug.Log(reflexion_counter); 
+        // Debug.Break(); 
+
+        if(EnemyState == EnemyStates.idle || EnemyState == EnemyStates.walk_around){
+            reflexion_counter -= Time.deltaTime; 
+            if(reflexion_counter < 0f){
+                NextActionReady = true;
+            }
+        }
+
+        if(NextActionReady){
+            string result_action = ProbActionSelection(); 
+            if(result_action == "dodge")
+                dodge = true; 
+            else if(result_action == "sprint")
+                sprint_attack = true; 
+            else if(result_action == "w_a")
+                walk_around = true; 
+
+            Debug.Log("Selected " + result_action); 
+            ResetBrain(); 
+        }
+        // // ===============================================================================================
+        // // ===============================================================================================
+        // // ===================================== MANUAL CONTROL ========================================== 
+       
+
+        if(MANUAL_CONTROL){
+            walk = DEBUG_Walk; 
+            dodge = DEBUG_Dodge; 
+            sprint_attack = DEBUG_SprintAttack; 
+            walk_around = DEBUG_WalkAround; 
+            hit = DEBUG_Hit; 
+
+            if(dodge)
+                DEBUG_Dodge = false; 
+            if(sprint_attack)
+                DEBUG_SprintAttack = false; 
+            if(walk_around) 
+                DEBUG_WalkAround = false;
+            if(hit)
+                DEBUG_Hit = false;  
+        } 
     }
 
-    void ai_Inputs(out Vector3 mvt, out bool dodge_input, out bool sprint_input, out bool launch_sprint_attack, out bool walk_around){
-        bool walk_order, dodge_order, sprint_attack_order, launch_attack, walk_around_order;
+    void ResetBrain(){
+        NextActionReady = false; 
+        reflexion_counter = ReflexionTime; 
+    }
+
+    string ProbActionSelection(){
+        float random_val = Random.Range(0f, 1f); 
+        if(random_val < 0.3f)
+            return "dodge"; 
+        else if(random_val >= 0.3f && random_val < 0.6f)
+            return "sprint"; 
+        else
+            return "w_a"; 
+    }
+
+    void ai_Inputs(out Vector3 mvt, out bool dodge_input, out bool sprint_input, out bool launch_sprint_attack, out bool walk_around, out bool hit){
+        bool walk_order, dodge_order, sprint_attack_order, launch_attack, walk_around_order, hit_order;
         launch_attack = false; 
         Vector3 mvt_direction = Vector3.zero;  
-        AI_Brain(out walk_order, out dodge_order, out sprint_attack_order, out walk_around_order); 
+        AI_Brain(out walk_order, out dodge_order, out sprint_attack_order, out walk_around_order, out hit_order); 
 
         if(EnemyState == EnemyStates.dodge || dodge_order)
             ManageDodgeState(dodge_order, out mvt_direction); 
@@ -89,13 +154,15 @@ public class EnemyAI : MonoBehaviour
         sprint_input = sprint_attack_order; 
         launch_sprint_attack = launch_attack; 
         walk_around = walk_around_order; 
+        hit = hit_order; 
     }
 
     void ManageWalkAroundState(bool action_order, out Vector3 mvt_dir){
         if(action_order){
             walk_around_counter = WalkAroundTime; 
-            // walk_around_target_position = transform.position + Vector3.ProjectOnPlane(Random.insideUnitSphere * MaxWalkAroundDistance, Vector3.up);
-            walk_around_target_position = Vector3.ProjectOnPlane(DebugTargetWalkAround.position, Vector3.up) + Vector3.up * transform.position.y; 
+            walk_around_target_position = transform.position + Vector3.ProjectOnPlane(Random.insideUnitSphere * MaxWalkAroundDistance, Vector3.up);
+            // walk_around_target_position = new Vector3(DebugTargetWalkAround.position.x, transform.position.y, DebugTargetWalkAround.position.z); 
+            // Debug.DrawRay(transform.position, DebugTargetWalkAround.position - transform.position, Color.red, 1f); 
             mvt_dir = walk_around_target_position - transform.position;   
             last_mvt_input = mvt_dir; 
         }

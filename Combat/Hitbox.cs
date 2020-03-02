@@ -42,6 +42,7 @@ public class Hitbox : MonoBehaviour
     }
 
     void Activate(HitData hd){
+
         Active = true; 
         current_hit_data = hd; 
         // ADD ENABLE VFX

@@ -131,7 +131,9 @@ public class CharacterControl : MonoBehaviour
     // ========================================================================
     // ======================== ENEMY CONTROL =================================
 
-    public delegate void EnemyInputs(out Vector3 v1, out bool b1, out bool b2, out bool b3, out bool b4);
+    public delegate void EnemyInputs(out Vector3 v1, out bool b1,
+                                     out bool b2, out bool b3,
+                                     out bool b4, out bool b5);
     public EnemyInputs EnemyInput;
     bool IsEnemy; 
 
@@ -229,8 +231,9 @@ public class CharacterControl : MonoBehaviour
         bool dodge_input = false;  
         bool sprint_input = false; 
         bool sprint_attack = false;
-        bool walk_around = false;  
-        EnemyInput(out mvt, out dodge_input, out sprint_input, out sprint_attack, out walk_around); 
+        bool walk_around = false;
+        bool hit = false;  
+        EnemyInput(out mvt, out dodge_input, out sprint_input, out sprint_attack, out walk_around, out hit); 
         float enemy_mvt_intensity = Vector3.SqrMagnitude(mvt); 
         SendTriggerToAnimator(false, landed, fall, dodge_input, false, false, false, false, false); 
         if(sprint_input)
@@ -239,6 +242,12 @@ public class CharacterControl : MonoBehaviour
             anim_control.BoolControl("in_range", true); 
         if(walk_around)
             anim_control.Launch("walk_around"); 
+        if(hit){
+            if(CurrentState == CharacterState.hit)  
+                anim_control.HitAnimation("follow"); 
+            else
+                anim_control.HitAnimation("hit"); 
+        }
 
         if(GetComponent<EnemyAI>().IsWalkAround()){
 
@@ -246,7 +255,7 @@ public class CharacterControl : MonoBehaviour
            
             CharacterMovement.MoveCharacter(controller, transform, 
                                     mvt, intensity : 1f, ref current_horizontal_speed,  
-                                    GroundSpeed, AimAcceleration, Decceleration, 
+                                    GroundSpeed, Acceleration, Decceleration, 
                                     ref current_vertical_speed, JumpSpeed, 
                                     GroundedGravity, AimAerialGravity, MaxFallSpeed, 
                                     grounded, jump_trigger, RotationSpeed, false, face_direction: look_at_ennemy);
